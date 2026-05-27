@@ -4,21 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>基隆海底保衛戰 - ROV環保任務</title>
-    <!-- 引入 Tailwind CSS 進行快速排版 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 自訂動畫區塊 */
-        
-        /* 讓物件產生上下漂浮的效果 */
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-15px); }
         }
-        .animate-float {
-            animation: float 4s ease-in-out infinite;
-        }
-        
-        /* 泡泡上升動畫 */
+        .animate-float { animation: float 4s ease-in-out infinite; }
         @keyframes bubbleUp {
             0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
             50% { opacity: 0.6; }
@@ -31,206 +23,143 @@
             border-radius: 50%;
             animation: bubbleUp 8s infinite ease-in;
         }
-
-        /* 頭燈光束的形狀與漸變特效 */
         #headlight {
             background: radial-gradient(ellipse at left, rgba(255, 255, 180, 0.8) 0%, rgba(255, 255, 180, 0) 70%);
             clip-path: polygon(0 45%, 100% 0, 100% 100%, 0 55%);
             transition: opacity 0.15s ease-out;
         }
-
-        /* 垃圾消除時的動畫過渡效果 */
-        .trash {
-            transition: all 0.4s ease-out;
-        }
-        /* 被光束打中後的狀態：縮小並變透明 */
-        .trash.destroyed {
-            transform: scale(0) rotate(180deg) !important;
-            opacity: 0;
-        }
+        .trash { transition: all 0.4s ease-out; }
+        .trash.destroyed { transform: scale(0) rotate(180deg) !important; opacity: 0; }
     </style>
 </head>
 <body class="overflow-hidden m-0 p-0 select-none bg-slate-900 font-sans">
 
-    <!-- 遊戲主場景：基隆海底背景 (使用深藍/深綠漸層代表海水) -->
+    <!-- 遊戲場景 -->
     <div id="game-container" class="relative w-full h-screen bg-gradient-to-b from-[#004e75] via-[#002f4b] to-[#00111f] overflow-hidden">
         
-        <!-- 背景裝飾文字 -->
+        <!-- 背景裝飾文字與泡泡 -->
         <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
             <h1 class="text-white text-8xl font-bold tracking-widest">基隆潮境海灣</h1>
         </div>
-
-        <!-- 產生背景泡泡 -->
         <div class="bubble w-4 h-4 left-[10%]" style="animation-duration: 6s; animation-delay: 1s;"></div>
         <div class="bubble w-6 h-6 left-[30%]" style="animation-duration: 9s; animation-delay: 2s;"></div>
         <div class="bubble w-3 h-3 left-[60%]" style="animation-duration: 7s; animation-delay: 0s;"></div>
         <div class="bubble w-8 h-8 left-[80%]" style="animation-duration: 10s; animation-delay: 3s;"></div>
 
-        <!-- 右上角計分板 -->
+        <!-- 計分板 -->
         <div class="absolute top-6 right-8 bg-white/20 backdrop-blur-sm border border-white/30 text-white px-6 py-3 rounded-2xl shadow-lg text-2xl font-bold z-20">
             分數: <span id="score" class="text-yellow-300 text-3xl ml-2">0</span> / 10
         </div>
 
-        <!-- 左上角操作提示 -->
-        <div class="absolute top-6 left-8 bg-black/40 text-white/90 px-4 py-3 rounded-lg text-sm z-20 shadow-lg border border-white/20">
+        <!-- 這裡就是跳轉回 index.html 的按鈕 -->
+        <a href="index.html" class="absolute top-6 left-8 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-bold shadow-lg z-30 transition cursor-pointer flex items-center gap-2 border border-blue-400">
+            <span>🏠</span> 返回教學主頁
+        </a>
+
+        <!-- 操作提示 -->
+        <div class="absolute top-20 left-8 bg-black/40 text-white/90 px-4 py-3 rounded-lg text-sm z-20 shadow-lg border border-white/20">
             <p class="mb-1">🎯 <b>任務目標：</b>清除 10 個海洋垃圾</p>
-            <p class="mb-1">🕹️ <b>移動：</b>使用鍵盤 <kbd class="bg-white/20 px-1 rounded">⬆️</kbd> <kbd class="bg-white/20 px-1 rounded">⬇️</kbd> <kbd class="bg-white/20 px-1 rounded">⬅️</kbd> <kbd class="bg-white/20 px-1 rounded">➡️</kbd> 控制方向</p>
-            <p>💡 <b>清除：</b>靠近垃圾並按下 <kbd class="bg-white/20 px-2 py-1 rounded font-mono">空白鍵</kbd> 照射光束</p>
+            <p class="mb-1">🕹️ <b>移動：</b>使用鍵盤 <kbd class="bg-white/20 px-1 rounded">⬆️⬇️⬅️➡️</kbd></p>
+            <p>💡 <b>清除：</b>靠近垃圾按 <kbd class="bg-white/20 px-2 py-1 rounded font-mono">空白鍵</kbd> 照射光束</p>
         </div>
 
-        <!-- 主角 ROV 與頭燈 -->
+        <!-- 主角 ROV -->
         <div id="rov" class="absolute z-10 flex items-center" style="left: 100px; top: 50vh; width: 140px; height: 90px;">
-            
-            <!-- 漂浮動畫容器 (僅處理上下浮動，解決 transform 屬性衝突) -->
             <div class="animate-float w-full h-full">
-                <!-- 翻轉容器 (處理左右轉向) -->
                 <div id="rov-content" class="relative flex items-center w-full h-full origin-center transition-transform duration-300">
-                    <!-- 水下 ROV 圖像 (使用 SVG 繪製) -->
                     <svg width="140" height="90" viewBox="0 0 140 90" class="relative z-10 drop-shadow-xl">
-                        <!-- 上方浮力材 / 骨架 -->
                         <rect x="20" y="15" width="100" height="15" rx="5" fill="#facc15" />
-                        <!-- 主機體 -->
                         <rect x="30" y="30" width="80" height="40" rx="8" fill="#eab308" />
                         <rect x="40" y="35" width="60" height="30" rx="5" fill="#ca8a04" />
-                        <!-- 推進器 (左後) -->
                         <path d="M10 40 L30 35 L30 65 L10 60 Z" fill="#334155" />
                         <rect x="5" y="42" width="10" height="16" fill="#0f172a" />
-                        <!-- 前方攝影機與頭燈座 -->
                         <circle cx="115" cy="50" r="12" fill="#94a3b8" />
                         <circle cx="118" cy="50" r="8" fill="#e2e8f0" />
-                        <circle cx="120" cy="50" r="4" fill="#fbbf24" /> <!-- 發光點 -->
-                        <!-- 連接線 -->
+                        <circle cx="120" cy="50" r="4" fill="#fbbf24" />
                         <path d="M70 15 C 70 -5, 10 -5, 0 0" fill="none" stroke="#fb923c" stroke-width="3" stroke-dasharray="4 2"/>
                     </svg>
-
-                    <!-- 頭燈光束 (預設透明度為 0 隱藏) -->
                     <div id="headlight" class="absolute left-[110px] top-1/2 -translate-y-1/2 w-[60vw] h-[400px] opacity-0 pointer-events-none z-0"></div>
                 </div>
             </div>
         </div>
 
-        <!-- 放置海洋垃圾的容器 -->
+        <!-- 海洋垃圾容器 -->
         <div id="trash-container" class="absolute inset-0 pointer-events-none z-0"></div>
 
-        <!-- 任務完成彈跳視窗 (預設隱藏) -->
+        <!-- 任務完成彈跳視窗 -->
         <div id="win-modal" class="hidden absolute inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center">
             <div class="bg-white rounded-3xl p-10 text-center shadow-2xl transform scale-110 transition-transform">
                 <div class="text-6xl mb-4">🌍🐢</div>
                 <h2 class="text-4xl font-bold text-teal-600 mb-6">成功了，環保小尖兵！</h2>
                 <p class="text-gray-600 mb-8 text-lg">您已經成功清除了基隆海底的海洋垃圾，<br>感謝您為海洋生態盡一份心力！</p>
-                <button onclick="restartGame()" class="bg-teal-500 hover:bg-teal-600 text-white text-xl font-bold py-3 px-8 rounded-full shadow-lg transition-colors cursor-pointer pointer-events-auto">
-                    再挑戰一次
-                </button>
+                <div class="flex justify-center gap-4">
+                    <button onclick="restartGame()" class="bg-teal-500 hover:bg-teal-600 text-white text-lg font-bold py-3 px-6 rounded-full shadow-lg transition-colors cursor-pointer pointer-events-auto">
+                        再挑戰一次
+                    </button>
+                    <!-- 破關後跳轉回 index.html，並直接帶入 #quiz 標籤切換到測驗頁 -->
+                    <a href="index.html#quiz" class="bg-blue-500 hover:bg-blue-600 text-white text-lg font-bold py-3 px-6 rounded-full shadow-lg transition-colors cursor-pointer pointer-events-auto flex items-center justify-center no-underline">
+                        前往學習評量 ➡️
+                    </a>
+                </div>
             </div>
         </div>
-
     </div>
 
-    <!-- JavaScript 互動邏輯 -->
+    <!-- 遊戲邏輯 -->
     <script>
-        // --- 變數設定 ---
         let score = 0;
         let gameOver = false;
-        let facingRight = true; // 新增：記錄 ROV 當前的朝向
-        let trashSpawnInterval; // 新增：自動生成垃圾的計時器
+        let facingRight = true;
+        let trashSpawnInterval;
         
-        // 取得 HTML 元素
         const scoreElement = document.getElementById('score');
         const headlightElement = document.getElementById('headlight');
         const trashContainer = document.getElementById('trash-container');
         const winModal = document.getElementById('win-modal');
         const rovElement = document.getElementById('rov');
-        const rovContent = document.getElementById('rov-content'); // 取得翻轉容器
+        const rovContent = document.getElementById('rov-content');
 
-        // ROV 移動相關變數
-        let rovX = window.innerWidth * 0.2; // 初始 X 位置
-        let rovY = window.innerHeight * 0.5; // 初始 Y 位置
-        const speed = 7; // 移動速度
+        let rovX = window.innerWidth * 0.2;
+        let rovY = window.innerHeight * 0.5;
+        const speed = 7;
         const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
-        // 定義寫實風格的海洋垃圾 (使用 SVG 繪製)
         const trashTypes = [
-            // 寶特瓶 (塑膠瓶)
-            `<svg width="35" height="80" viewBox="0 0 30 80">
-                <rect x="10" y="0" width="10" height="10" fill="#cbd5e1"/>
-                <rect x="5" y="10" width="20" height="65" rx="5" fill="rgba(186, 230, 253, 0.6)" stroke="#7dd3fc" stroke-width="2"/>
-                <rect x="5" y="40" width="20" height="15" fill="#0ea5e9"/>
-            </svg>`,
-            // 廢棄塑膠袋
-            `<svg width="60" height="60" viewBox="0 0 60 60">
-                <path d="M10,20 Q30,5 50,20 Q55,40 45,55 Q25,60 10,50 Q5,35 10,20 Z" fill="rgba(241, 245, 249, 0.7)" stroke="#cbd5e1" stroke-width="1.5"/>
-                <path d="M20,20 Q15,5 25,5" fill="none" stroke="rgba(241, 245, 249, 0.8)" stroke-width="4"/>
-                <path d="M40,20 Q45,5 35,5" fill="none" stroke="rgba(241, 245, 249, 0.8)" stroke-width="4"/>
-                <path d="M20,30 Q30,40 40,30" fill="none" stroke="#e2e8f0" stroke-width="1"/>
-            </svg>`,
-            // 生鏽鐵罐
-            `<svg width="40" height="50" viewBox="0 0 40 50">
-                <rect x="5" y="5" width="30" height="40" rx="3" fill="#b45309" stroke="#78350f" stroke-width="1"/>
-                <ellipse cx="20" cy="5" rx="15" ry="5" fill="#d97706"/>
-                <ellipse cx="20" cy="45" rx="15" ry="5" fill="#78350f"/>
-                <ellipse cx="20" cy="5" rx="10" ry="3" fill="#000000" opacity="0.6"/>
-                <path d="M10,15 Q20,20 30,15 M10,30 Q20,35 30,30" stroke="#78350f" fill="none" stroke-width="1.5"/>
-            </svg>`,
-            // 廢棄漁網碎片
-            `<svg width="55" height="55" viewBox="0 0 50 50">
-                <path d="M5,5 L45,45 M5,15 L35,45 M15,5 L45,35 M5,25 L25,45 M25,5 L45,25 M5,35 L15,45 M35,5 L45,15" stroke="#166534" stroke-width="2" opacity="0.8"/>
-                <path d="M5,45 L45,5 M5,35 L35,5 M15,45 L45,15 M5,25 L25,5 M25,45 L45,25 M5,15 L15,5 M35,45 L45,35" stroke="#166534" stroke-width="2" opacity="0.8"/>
-            </svg>`
+            `<svg width="35" height="80" viewBox="0 0 30 80"><rect x="10" y="0" width="10" height="10" fill="#cbd5e1"/><rect x="5" y="10" width="20" height="65" rx="5" fill="rgba(186, 230, 253, 0.6)" stroke="#7dd3fc" stroke-width="2"/><rect x="5" y="40" width="20" height="15" fill="#0ea5e9"/></svg>`,
+            `<svg width="60" height="60" viewBox="0 0 60 60"><path d="M10,20 Q30,5 50,20 Q55,40 45,55 Q25,60 10,50 Q5,35 10,20 Z" fill="rgba(241, 245, 249, 0.7)" stroke="#cbd5e1" stroke-width="1.5"/><path d="M20,20 Q15,5 25,5" fill="none" stroke="rgba(241, 245, 249, 0.8)" stroke-width="4"/><path d="M40,20 Q45,5 35,5" fill="none" stroke="rgba(241, 245, 249, 0.8)" stroke-width="4"/><path d="M20,30 Q30,40 40,30" fill="none" stroke="#e2e8f0" stroke-width="1"/></svg>`,
+            `<svg width="40" height="50" viewBox="0 0 40 50"><rect x="5" y="5" width="30" height="40" rx="3" fill="#b45309" stroke="#78350f" stroke-width="1"/><ellipse cx="20" cy="5" rx="15" ry="5" fill="#d97706"/><ellipse cx="20" cy="45" rx="15" ry="5" fill="#78350f"/><ellipse cx="20" cy="5" rx="10" ry="3" fill="#000000" opacity="0.6"/><path d="M10,15 Q20,20 30,15 M10,30 Q20,35 30,30" stroke="#78350f" fill="none" stroke-width="1.5"/></svg>`,
+            `<svg width="55" height="55" viewBox="0 0 50 50"><path d="M5,5 L45,45 M5,15 L35,45 M15,5 L45,35 M5,25 L25,45 M25,5 L45,25 M5,35 L15,45 M35,5 L45,15" stroke="#166534" stroke-width="2" opacity="0.8"/><path d="M5,45 L45,5 M5,35 L35,5 M15,45 L45,15 M5,25 L25,5 M25,45 L45,25 M5,15 L15,5 M35,45 L45,35" stroke="#166534" stroke-width="2" opacity="0.8"/></svg>`
         ];
 
-        // --- 函式：產生垃圾 ---
         function spawnTrash(count) {
             for (let i = 0; i < count; i++) {
                 const trash = document.createElement('div');
-                // 加入 z-10 確保垃圾層級高於背景，不會消失不見
                 trash.className = 'trash absolute animate-float drop-shadow-xl z-10';
-                
-                // 隨機選擇一種寫實垃圾 SVG
                 trash.innerHTML = trashTypes[Math.floor(Math.random() * trashTypes.length)];
-                
-                // 隨機角度讓垃圾看起來更自然
-                const randomRotation = Math.random() * 360;
-                trash.querySelector('svg').style.transform = `rotate(${randomRotation}deg)`;
-                
-                // 改用 vw 與 vh 確保垃圾在各種螢幕尺寸都能正確生成於可視範圍
-                const randomX = 10 + Math.random() * 80; // 10vw ~ 90vw
-                const randomY = 10 + Math.random() * 80; // 10vh ~ 90vh
-                
-                trash.style.left = `${randomX}vw`;
-                trash.style.top = `${randomY}vh`;
+                trash.querySelector('svg').style.transform = `rotate(${Math.random() * 360}deg)`;
+                trash.style.left = `${10 + Math.random() * 80}vw`;
+                trash.style.top = `${10 + Math.random() * 80}vh`;
                 trash.style.animationDelay = `${Math.random() * 2}s`;
-                
                 trashContainer.appendChild(trash);
             }
         }
 
-        // --- 函式：啟動定時器，緩慢生成垃圾 ---
         function startTrashSpawner() {
             if (trashSpawnInterval) clearInterval(trashSpawnInterval);
-            
-            // 每 1.5 秒檢查一次
             trashSpawnInterval = setInterval(() => {
                 if (gameOver) return;
-                
-                const activeTrashes = document.querySelectorAll('.trash:not(.destroyed)');
-                // 畫面上最多同時存在 5 個垃圾
-                if (activeTrashes.length < 5) {
+                if (document.querySelectorAll('.trash:not(.destroyed)').length < 5) {
                     spawnTrash(1);
                 }
             }, 1500);
         }
 
-        // --- 監聽鍵盤事件 (移動與發光) ---
         document.addEventListener('keydown', (event) => {
             if (gameOver) return;
-
-            // 處理方向鍵
             if (keys.hasOwnProperty(event.code)) {
                 keys[event.code] = true;
-                event.preventDefault(); // 防止網頁捲動
+                event.preventDefault();
             }
-
-            // 處理空白鍵
             if (event.code === 'Space') {
                 event.preventDefault();
                 activateROV();
@@ -243,90 +172,58 @@
             }
         });
 
-        // --- 遊戲迴圈：處理平滑移動與方向轉向 ---
         function gameLoop() {
             if (!gameOver) {
-                // 根據按鍵更新座標與朝向
                 if (keys.ArrowUp) rovY -= speed;
                 if (keys.ArrowDown) rovY += speed;
-                
-                if (keys.ArrowLeft) {
-                    rovX -= speed;
-                    facingRight = false; // 標記朝左
-                }
-                if (keys.ArrowRight) {
-                    rovX += speed;
-                    facingRight = true;  // 標記朝右
-                }
+                if (keys.ArrowLeft) { rovX -= speed; facingRight = false; }
+                if (keys.ArrowRight) { rovX += speed; facingRight = true; }
 
-                // 限制 ROV 不能跑出螢幕邊界
                 rovX = Math.max(0, Math.min(window.innerWidth - 140, rovX));
                 rovY = Math.max(0, Math.min(window.innerHeight - 90, rovY));
 
-                // 套用新座標
                 rovElement.style.left = `${rovX}px`;
                 rovElement.style.top = `${rovY}px`;
-                
-                // 根據朝向翻轉 ROV 的內容 (包含 SVG 圖像與頭燈)
                 rovContent.style.transform = facingRight ? 'scaleX(1)' : 'scaleX(-1)';
             }
             requestAnimationFrame(gameLoop);
         }
 
-        // --- 函式：啟動頭燈並根據方向判定碰撞 ---
         function activateROV() {
-            // 如果燈已經是亮的，就不要重複執行
             if (headlightElement.style.opacity === '1') return;
-
-            // 打開頭燈
             headlightElement.style.opacity = '1';
 
             const activeTrashes = document.querySelectorAll('.trash:not(.destroyed)');
+            const beamLength = window.innerWidth * 0.6; 
             
-            // 設定光束的實際長度
-            const beamLength = window.innerWidth * 0.6; // 60vw
-            
-            // 計算光束 X 軸碰撞範圍 (考慮左右朝向)
             let beamLeft, beamRight;
             if (facingRight) {
-                // 朝右：發射點在 ROV 右側 (大約 x + 110)
                 beamLeft = rovX + 110; 
                 beamRight = beamLeft + beamLength;
             } else {
-                // 朝左：翻轉後，發射點在 ROV 左側 (寬度140 - 110 = 30)
                 beamRight = rovX + 30;
                 beamLeft = beamRight - beamLength;
             }
 
-            // 計算光束 Y 軸碰撞範圍
             const beamTop = rovY + 45 - 150; 
             const beamBottom = rovY + 45 + 150;
 
             activeTrashes.forEach(trash => {
-                // 取得垃圾在螢幕上的真實位置
                 const rect = trash.getBoundingClientRect();
                 const trashCenterX = rect.left + rect.width / 2;
                 const trashCenterY = rect.top + rect.height / 2;
 
-                // 碰撞判定：判斷垃圾是否落在會因為轉向而改變的矩形範圍內
                 if (trashCenterX >= beamLeft && trashCenterX <= beamRight &&
                     trashCenterY >= beamTop && trashCenterY <= beamBottom) {
                     
-                    // 標記為銷毀
                     trash.classList.add('destroyed');
-                    
-                    // 增加分數
                     score += 1;
                     scoreElement.innerText = score;
 
-                    // 延遲移除垃圾節點
-                    setTimeout(() => {
-                        trash.remove();
-                    }, 400);
+                    setTimeout(() => trash.remove(), 400);
                 }
             });
 
-            // 檢查是否達到過關條件
             if (score >= 10 && !gameOver) {
                 gameOver = true;
                 setTimeout(() => {
@@ -335,39 +232,25 @@
                 }, 800);
             }
 
-            // 300 毫秒後自動關閉頭燈
-            setTimeout(() => {
-                headlightElement.style.opacity = '0';
-            }, 300);
+            setTimeout(() => headlightElement.style.opacity = '0', 300);
         }
 
-        // --- 函式：重新開始遊戲 ---
         function restartGame() {
             winModal.classList.add('hidden');
             winModal.classList.remove('flex');
-            
             score = 0;
             scoreElement.innerText = score;
             gameOver = false;
             facingRight = true;
-            
-            // 將 ROV 放回畫面左側
             rovX = window.innerWidth * 0.2;
             rovY = window.innerHeight * 0.5;
             rovContent.style.transform = 'scaleX(1)';
-            
             trashContainer.innerHTML = '';
-            
-            // 重新開始生成
             startTrashSpawner();
         }
 
-        // --- 遊戲初始化 ---
-        // 啟動移動迴圈
         requestAnimationFrame(gameLoop);
-        // 啟動定時垃圾生成機制
         startTrashSpawner();
-
     </script>
 </body>
 </html>
