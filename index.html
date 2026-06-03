@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨堂小測驗</title>
+    <style>
+        /* 基礎排版與背景設定 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e6f2ff; /* 明亮乾淨的淺藍色背景 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        /* 測驗主體區塊 */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            padding: 35px 30px;
+            max-width: 450px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #4a90e2;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.6em;
+        }
+
+        /* 輸入框設計 */
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label.section-title {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #cce5ff;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #4a90e2;
+        }
+
+        /* 題目區塊設計 */
+        .question-box {
+            background-color: #f8fbff;
+            border-left: 5px solid #ffb347; /* 橘色左邊框增加活潑感 */
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 1.05em;
+        }
+
+        .option-label {
+            display: block;
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: #555;
+            transition: color 0.2s;
+        }
+
+        .option-label:hover {
+            color: #4a90e2;
+        }
+
+        .option-label input {
+            margin-right: 10px;
+            accent-color: #4a90e2; /* 改變單選框顏色 (支援現代瀏覽器) */
+            transform: scale(1.2);
+        }
+
+        /* 按鈕設計 */
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* 結果提示訊息 */
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none; /* 預設隱藏 */
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <h1>✨ 隨堂小測驗 ✨</h1>
+        
+        <div class="form-group">
+            <label class="section-title" for="studentName">👤 學生姓名：</label>
+            <input type="text" id="studentName" placeholder="請輸入你的姓名">
+        </div>
+
+        <div class="question-box">
+            <div class="question-text">1. 台灣最高的山是哪一座？</div>
+            <label class="option-label"><input type="radio" name="q1" value="阿里山"> 阿里山</label>
+            <label class="option-label"><input type="radio" name="q1" value="玉山"> 玉山</label>
+            <label class="option-label"><input type="radio" name="q1" value="陽明山"> 陽明山</label>
+        </div>
+
+        <div class="question-box">
+            <div class="question-text">2. 水的三態中，固態稱為什麼？</div>
+            <label class="option-label"><input type="radio" name="q2" value="冰"> 冰</label>
+            <label class="option-label"><input type="radio" name="q2" value="水蒸氣"> 水蒸氣</label>
+            <label class="option-label"><input type="radio" name="q2" value="雲"> 雲</label>
+        </div>
+
+        <button id="submitBtn" onclick="submitQuiz()">送出並看成績 🚀</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function submitQuiz() {
+            // 取得輸入的值與作答結果
+            const nameInput = document.getElementById('studentName').value.trim();
+            const q1Result = document.querySelector('input[name="q1"]:checked');
+            const q2Result = document.querySelector('input[name="q2"]:checked');
+            
+            // 1. 驗證防呆：檢查是否都有填寫
+            if (!nameInput) {
+                showResult('請記得填寫姓名喔！', 'error');
+                return;
+            }
+            if (!q1Result || !q2Result) {
+                showResult('請確認兩題都已經作答完畢！', 'error');
+                return;
+            }
+
+            // 2. 計算分數
+            let score = 0;
+            // 判斷正確答案
+            if (q1Result.value === '玉山') score += 50;
+            if (q2Result.value === '冰') score += 50;
+
+            // 3. 在畫面上顯示成績
+            showResult(`${nameInput} 同學你好，你的總分是：${score} 分！🎉`, 'success');
+
+            // ==========================================
+            // ⭐️ 整合設定：將成績傳送至 Google Sheets (GAS API)
+            // ==========================================
+            // 如果你要把這個網頁跟你剛剛寫好的 Google Apps Script 串接
+            // 請將下方的註解取消，並換成你的 Web App URL 即可運作
+            
+            /*
+            const gasUrl = '請在這裡貼上你的_Web_App_URL';
+            const btn = document.getElementById('submitBtn');
+            
+            // 改變按鈕狀態，避免學生連點重複送出
+            btn.innerText = "資料傳送中... ⏳";
+            btn.disabled = true;
+
+            // 發送 POST 請求給 GAS
+            fetch(gasUrl, {
+                method: 'POST',
+                // 注意：在 GAS 環境中，為了避免觸發 CORS 預檢請求 (Preflight) 失敗，
+                // 建議將 Content-Type 設為 text/plain，GAS 的 JSON.parse 依然可以順利解析。
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ 
+                    name: nameInput, 
+                    score: score 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('成功寫入:', data);
+                btn.innerText = "成績已成功登錄！ ✅";
+            })
+            .catch(error => {
+                console.error('寫入失敗:', error);
+                btn.innerText = "送出並看成績 🚀";
+                btn.disabled = false;
+                showResult('成績送出失敗，請通知老師。', 'error');
+            });
+            */
+        }
+
+        // 負責顯示提示訊息的輔助函數
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerText = message;
+            resultDiv.className = type; // 套用對應的 CSS 樣式 (success 或 error)
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
