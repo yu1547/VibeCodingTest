@@ -1,11 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ 紙電路實作學習單</title>
-    <!-- 引入 Tailwind CSS 讓網頁變美觀 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Helvetica Neue', Arial, 'LiHei Pro', 'Microsoft JhengHei', sans-serif; }
@@ -21,7 +19,6 @@
         </div>
 
         <form id="worksheetForm" class="space-y-6">
-            <!-- 班級座號 & 姓名 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-gray-700 font-bold mb-2">班級座號</label>
@@ -35,7 +32,6 @@
                 </div>
             </div>
 
-            <!-- LED 顏色 (單選) -->
             <div>
                 <label class="block text-gray-700 font-bold mb-2">1. 你今天主要使用了哪種顏色的 LED 燈？</label>
                 <div class="flex flex-wrap gap-4">
@@ -58,7 +54,6 @@
                 </div>
             </div>
 
-            <!-- 成功與否 (單選) -->
             <div>
                 <label class="block text-gray-700 font-bold mb-2">2. 你的紙電路最後有成功發光嗎？</label>
                 <div class="flex space-x-6">
@@ -73,20 +68,17 @@
                 </div>
             </div>
 
-            <!-- 心得反思 (文字區塊) -->
             <div>
                 <label class="block text-gray-700 font-bold mb-2">3. 實作過程中遇到最大的困難是什麼？你是怎麼解決的？</label>
                 <textarea name="reflection" rows="4" required placeholder="請詳細描述你的發現與解決方法..." 
                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"></textarea>
             </div>
 
-            <!-- 送出按鈕 -->
             <button type="submit" id="submitBtn" 
                     class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200 transform hover:scale-[1.02]">
                 🚀 送出學習單
             </button>
             
-            <!-- 訊息提示區 -->
             <div id="messageArea" class="hidden text-center font-bold p-4 rounded-lg mt-4"></div>
         </form>
 
@@ -94,57 +86,55 @@
 
     <script>
         // ==========================================
-        // ⚠️ 老師請注意：請將下方的 URL 替換成您的 GAS 網頁應用程式網址
+        // ⚠️ 關鍵步驟：把你在「步驟一」複製的新網址，貼到下方的單引號裡面！
         // ==========================================
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJv3MDMTwutzvT4O7_8YLC7-c5j6L07mlvnb41MblQgHVyoRh4nTErzXxHVeEVdKuA9Q/exec'; 
+        const GAS_URL = '請將你在步驟一取得的_新版網址_貼到這裡保留單引號'; 
 
         const form = document.getElementById('worksheetForm');
         const submitBtn = document.getElementById('submitBtn');
         const messageArea = document.getElementById('messageArea');
 
         form.addEventListener('submit', function(e) {
-            // 阻止表單預設的跳轉行為
             e.preventDefault();
 
-            // 檢查是否已經替換了網址
-            if (GAS_URL.includes('XXXXXXXXXXXXXX')) {
-                alert("老師請注意：請先在程式碼中替換你的 GAS_URL！");
-                return;
-            }
-
-            // 變更按鈕狀態，避免學生重複點擊
+            // 變更按鈕狀態
             submitBtn.disabled = true;
             submitBtn.innerHTML = '⏳ 資料傳送中...';
             submitBtn.classList.replace('bg-yellow-500', 'bg-gray-400');
             submitBtn.classList.replace('hover:bg-yellow-600', 'hover:bg-gray-400');
-            
             messageArea.classList.add('hidden');
 
-            // 自動收集表單內所有帶有 name 屬性的輸入資料
+            // 收集表單資料
             const formData = new FormData(form);
-            // 將 FormData 轉換成 GAS do_Post 容易讀取的格式 (x-www-form-urlencoded)
-            const data = new URLSearchParams(formData);
+            
+            // 整理成 GAS 要的格式
+            const payload = {
+                classNum: formData.get('className'),
+                name: formData.get('studentName'),
+                ledColor: formData.get('ledColor'),
+                isSuccess: formData.get('isSuccess'),
+                reflection: formData.get('reflection')
+            };
 
-            // 使用 fetch 將資料發送到後端
+            // 發送資料
             fetch(GAS_URL, {
                 method: 'POST',
-                body: data
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
             })
             .then(response => response.json())
             .then(result => {
                 if (result.status === 'success') {
-                    // 顯示成功訊息
                     messageArea.textContent = '🎉 太棒了！你的學習單已成功送出！';
                     messageArea.className = 'text-center font-bold p-4 rounded-lg mt-4 bg-green-100 text-green-700 block';
-                    form.reset(); // 清空表單
+                    form.reset(); 
                 } else {
                     throw new Error(result.message);
                 }
             })
             .catch(error => {
-                // 顯示錯誤訊息
                 console.error('Error:', error);
-                messageArea.textContent = '❌ 傳送失敗，請稍後再試或通知老師。(' + error.message + ')';
+                messageArea.textContent = '❌ 傳送失敗，請稍後再試或通知老師。';
                 messageArea.className = 'text-center font-bold p-4 rounded-lg mt-4 bg-red-100 text-red-700 block';
             })
             .finally(() => {
